@@ -22,6 +22,18 @@
         display: none;
       }
 
+      #loginButton {
+        display: none;
+      }
+
+      #audioPlayer {
+        display: none;
+      }
+
+      #downloadButton {
+        display: none;
+      }
+
       .rc-card-header {
         line-height: 31px;
       }
@@ -51,7 +63,9 @@
           <p class="card-text">
             Notice: Data may be lost as RingCentral only retain data up to 90 days or 100,000 call recordings.
             For more information, please read data retention policy section <a href="https://support.ringcentral.com/article/8913.html" target="_blank">here</a>.</p>
-          <button id="readFromRCServer" class="btn btn-primary">Get media from RingCentral server</button>
+          <p><audio controls id="audioPlayer"></audio></p>
+          <button id="loginButton" class="btn btn-primary">Get from RingCentral</button>
+          <button id="downloadButton" class="btn btn-primary">Download</button>
         </div>
       </div>
       <div class="card">
@@ -63,9 +77,9 @@
           <p class="card-text">
             Notice: There are hours delay for synchronizing data to third party storages. Check your Archiver settings <a target="_blank" href="https://service.ringcentral.com/application/extension/tools/archiver">here</a>.
             For introduction about RingCentral Archiver, please refer <a href="https://www.ringcentral.com/apps/ringcentral-archiver" target="_blank">here</a>.</p>
-          <button id="readFromGoogle" class="btn btn-outline-primary">Get media from Google Drive</button>
-          <button id="readFromDropbox" class="btn btn-outline-primary">Get media from Dropbox</button>
-          <button id="readFromBox" class="btn btn-outline-primary">Get media from Box</button>
+          <button id="readFromGoogle" class="btn btn-outline-primary">Get from Google Drive</button>
+          <button id="readFromDropbox" class="btn btn-outline-primary">Get from Dropbox</button>
+          <button id="readFromBox" class="btn btn-outline-primary">Get from Box</button>
         </div>
       </div>
     </div>

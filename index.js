@@ -32,7 +32,7 @@ var rcsdk = new RingCentral.SDK({
   redirectUri: window.location.protocol + '//' + window.location.host + window.location.pathname,
 });
 var platform = rcsdk.platform();
-
+var pageUri = window.location.protocol + '//' + window.location.host + window.location.pathname;
 var urlParams = rcsdk.platform().parseLoginRedirect(window.location.hash || window.location.search || '?a');
 var media = urlParams['media'];
 var authCode = urlParams['code'];
@@ -40,7 +40,10 @@ if (media) {
   media = decodeURIComponent(media);
 }
 
-function isValidMediaLink(link) {
+function isValidMedia(link) {
+  if (!link) {
+    return false;
+  }
   if (link.indexOf(environments[environment].media) === 0) {
     return true;
   }
@@ -48,6 +51,14 @@ function isValidMediaLink(link) {
     return true;
   }
   return false;
+}
+
+if (!isValidMedia(media)) {
+  media = null;
+}
+
+function isAudioMedia(media) {
+  return media.indexOf('recording') > -1
 }
 
 function getAttachmentId(mediaLink) {
@@ -58,26 +69,53 @@ function getAttachmentId(mediaLink) {
 }
 
 var logoutButton = window.document.getElementById('logoutButton');
+var loginButton = window.document.getElementById('loginButton');
+var audioPlayer = window.document.getElementById('audioPlayer');
+var downloadButton = window.document.getElementById('downloadButton');
 
-platform.loggedIn().then(function(isLogin) {
-  console.log('Login Status: ', isLogin);
+function updateAudioPlayer() {
+  if (isAudioMedia(media)) {
+    audioPlayer.style.display = 'inline-block';
+    platform.auth().data().then(function (authData) {
+      audioPlayer.src = media + '?access_token=' + authData.access_token;
+    });
+  }
+}
+
+platform.loggedIn().then(function (isLogin) {
   if (!isLogin && authCode) {
     var codeVerifier = localStorage.getItem('simple-media-player-code-verifier');
     urlParams.code_verifier = codeVerifier;
-    platform.login(urlParams).then(function() {
+    platform.login(urlParams).then(function () {
       lastMedia = localStorage.getItem(lastMediaKey);
       localStorage.removeItem(lastMediaKey);
-      if (lastMedia && isValidMediaLink(lastMedia)) {
-        platform.auth().data().then(function(authData) {
-          window.location.assign(lastMedia + '?access_token=' + authData.access_token);
-        });
+      if (!isValidMedia(lastMedia)) {
+        return;
       }
+      if (isAudioMedia(lastMedia)) {
+        window.location.assign(pageUri + '?media=' + encodeURIComponent(lastMedia));
+        return;
+      }
+      platform.auth().data().then(function (authData) {
+        window.location.assign(lastMedia + '?access_token=' + authData.access_token);
+      });
     });
+    return;
+  }
+  if (!isValidMedia(media)) {
     return;
   }
   if (isLogin) {
     logoutButton.style.display = 'block';
+    downloadButton.style.display = 'block';
+    updateAudioPlayer();
+  } else {
+    loginButton.style.display = 'block';
   }
+});
+
+platform.on('refreshSuccess', function() {
+  updateAudioPlayer();
 });
 
 logoutButton.addEventListener('click', function () {
@@ -86,26 +124,31 @@ logoutButton.addEventListener('click', function () {
   });
 });
 
-var readFromRCServerButton = window.document.getElementById('readFromRCServer');
-readFromRCServerButton.addEventListener('click', function () {
-  if (!isValidMediaLink(media)) {
+function openAuthPage() {
+  localStorage.setItem(lastMediaKey, media);
+  var loginUrl = platform.loginUrl({ usePKCE: true });
+  var codeVerifier = platform.codeVerifier;
+  localStorage.setItem('simple-media-player-code-verifier', codeVerifier);
+  window.location.assign(loginUrl);
+}
+
+loginButton.addEventListener('click', function () {
+  openAuthPage();
+});
+
+downloadButton.addEventListener('click', function () {
+  if (!isValidMedia(media)) {
     alert('media link is not valid');
     return;
   }
-  platform.loggedIn().then(function(isLogin) {
-    if (isLogin && media) {
-      platform.auth().data().then(function(authData) {
+  platform.loggedIn().then(function (isLogin) {
+    if (isLogin) {
+      platform.auth().data().then(function (authData) {
         window.location.assign(media + '?access_token=' + authData.access_token);
       });
       return;
-    }
-    if (!isLogin && media) {
-      localStorage.setItem(lastMediaKey, media);
-      var loginUrl = platform.loginUrl({usePKCE: true});
-      var codeVerifier = platform.codeVerifier;
-      localStorage.setItem('simple-media-player-code-verifier', codeVerifier);
-      window.location.assign(loginUrl);
-      return;
+    } else {
+      openAuthPage();
     }
   });
 });
@@ -128,21 +171,23 @@ readFromBoxButton.addEventListener('click', function () {
 var startGetMediaButton = window.document.getElementById('startGetMedia');
 startGetMediaButton.addEventListener('click', function () {
   var mediaUri = window.document.getElementById('mediaUri').value;
-  if (!isValidMediaLink(mediaUri)) {
+  if (!isValidMedia(mediaUri)) {
     alert('media link is not valid');
     return;
   }
-  var pageUri = window.location.protocol + '//' + window.location.host + window.location.pathname;
   window.location.assign(pageUri + '?media=' + encodeURIComponent(mediaUri));
 });
 
 var loading = document.getElementById('loading');
-loading.style.display = 'none';
 var mainPage = document.getElementById('mainPage');
 var startPage = document.getElementById('startPage');
 
 if (!media && !authCode) {
+  loading.style.display = 'none';
   startPage.style.display = 'block';
+} else if (authCode) {
+  loading.style.display = 'block';
 } else {
+  loading.style.display = 'none';
   mainPage.style.display = 'block';
 }
