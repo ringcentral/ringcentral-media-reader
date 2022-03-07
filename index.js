@@ -62,7 +62,7 @@ function isAudioMedia(media) {
 }
 
 function getAttachmentId(mediaLink) {
-  let purgeMedia = mediaLink.split('?')[0];
+  var purgeMedia = mediaLink.split('?')[0];
   purgeMedia = purgeMedia.split('#')[0];
   purgeMedia = purgeMedia.replace(/\/content$/, '');
   return purgeMedia.split('/').pop();
@@ -155,7 +155,10 @@ downloadButton.addEventListener('click', function () {
 
 var readFromGoogleButton = window.document.getElementById('readFromGoogle');
 readFromGoogleButton.addEventListener('click', function () {
-  window.location.assign(`https://drive.google.com/drive/search?q=` + getAttachmentId(media));
+  var googleDriveHomeURI = localStorage.getItem('googleDriveHomeURI') || 'https://drive.google.com/drive/u/0/my-drive';
+  googleDriveHomeURI = googleDriveHomeURI.split('?')[0];
+  var googleDriveSearchURI = googleDriveHomeURI.split('/my-drive')[0];
+  window.location.assign(`${googleDriveSearchURI}/search?q=` + getAttachmentId(media));
 });
 
 var readFromDropboxButton = window.document.getElementById('readFromDropbox');
@@ -166,6 +169,57 @@ readFromDropboxButton.addEventListener('click', function () {
 var readFromBoxButton = window.document.getElementById('readFromBox');
 readFromBoxButton.addEventListener('click', function () {
   window.location.assign(`https://app.box.com/folder/0/search?query=` + getAttachmentId(media));
+});
+
+var archiveSettingModal = window.document.getElementById('archiveSettingModal');
+var archiverSettingBootstrapModal = new bootstrap.Modal(archiveSettingModal, {
+  keyboard: false
+});
+var oneDriveHomeURIInput = window.document.getElementById('oneDriveHomeURI');
+var googleDriveHomeURIInput = window.document.getElementById('googleDriveHomeURI');
+function showArchiverSettings() {
+  var oneDriveHomeURI = localStorage.getItem('oneDriveHomeURI');
+  if (oneDriveHomeURI) {
+    oneDriveHomeURIInput.value = oneDriveHomeURI;
+  }
+  var googleDriveHomeURI = localStorage.getItem('googleDriveHomeURI');
+  googleDriveHomeURIInput.value = googleDriveHomeURI || 'https://drive.google.com/drive/u/0/my-drive';
+  archiverSettingBootstrapModal.show();
+}
+
+var readFromOneDrive = window.document.getElementById('readFromOneDrive');
+readFromOneDrive.addEventListener('click', function () {
+  var oneDriveHomeURI = localStorage.getItem('oneDriveHomeURI');
+  if (!oneDriveHomeURI) {
+    showArchiverSettings();
+    return;
+  }
+  oneDriveHomeURI = oneDriveHomeURI.split('?')[0];
+  if (oneDriveHomeURI.indexOf('sharepoint.com') > -1) {
+    window.location.assign(`${oneDriveHomeURI}?view=7&searchScope=all&q=` + getAttachmentId(media));
+    return;
+  }
+  window.location.assign(`${oneDriveHomeURI}?qt=search&q=` + getAttachmentId(media));
+});
+
+var archiverSettings = window.document.getElementById('archiverSettings');
+archiverSettings.addEventListener('click', function () {
+  showArchiverSettings();
+});
+
+var saveArchiverSettings = window.document.getElementById('saveArchiverSettings');
+saveArchiverSettings.addEventListener('click', function () {
+  if (oneDriveHomeURIInput.value && !oneDriveHomeURIInput.value.indexOf('https://') === 0) {
+    alert('Please enter a valid OneDrive home page URL');
+    return;
+  }
+  if (!googleDriveHomeURIInput.value || !googleDriveHomeURIInput.value.indexOf('https://drive.google.com/drive/') === 0) {
+    alert('Please enter a valid Google Drive home page URL');
+    return;
+  }
+  localStorage.setItem('oneDriveHomeURI', oneDriveHomeURIInput.value);
+  localStorage.setItem('googleDriveHomeURI', googleDriveHomeURIInput.value);
+  archiverSettingBootstrapModal.hide();
 });
 
 var startGetMediaButton = window.document.getElementById('startGetMedia');
