@@ -195,7 +195,11 @@ readFromOneDrive.addEventListener('click', function () {
     return;
   }
   oneDriveHomeURI = oneDriveHomeURI.split('?')[0];
-  window.location.assign(`${oneDriveHomeURI}?view=7&searchScope=all&q=` + getAttachmentId(media));
+  if (oneDriveHomeURI.indexOf('sharepoint.com') > -1) {
+    window.location.assign(`${oneDriveHomeURI}?view=7&searchScope=all&q=` + getAttachmentId(media));
+    return;
+  }
+  window.location.assign(`${oneDriveHomeURI}?qt=search&q=` + getAttachmentId(media));
 });
 
 var archiverSettings = window.document.getElementById('archiverSettings');
